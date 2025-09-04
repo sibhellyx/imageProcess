@@ -8,11 +8,11 @@ import (
 
 type Pool struct {
 	pool    chan *worker.Worker
-	handler func(int, string)
+	handler func(int, string) string
 	workers []*worker.Worker
 }
 
-func NewPool(handler func(int, string), countWorkers int) *Pool {
+func NewPool(handler func(int, string) string, countWorkers int) *Pool {
 	p := &Pool{
 		handler: handler,
 		pool:    make(chan *worker.Worker, countWorkers),
@@ -33,13 +33,15 @@ func (p *Pool) Create() {
 	}
 }
 
-func (p *Pool) Handle(imagePath string) {
+func (p *Pool) Handle(imagePath string) string {
+	resultChan := make(chan string, 1)
 	w := <-p.pool
 	go func() {
-		p.handler(w.Id, imagePath)
+		resultChan <- p.handler(w.Id, imagePath)
 		w.JobsCompleted++
 		p.pool <- w
 	}()
+	return <-resultChan
 }
 
 func (p *Pool) Wait() {

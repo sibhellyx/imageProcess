@@ -3,9 +3,7 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"time"
 
@@ -15,6 +13,7 @@ import (
 	"github.com/sibhellyx/imageProccesor/internal/repository"
 	"github.com/sibhellyx/imageProccesor/internal/service"
 	"github.com/sibhellyx/imageProccesor/internal/workerpool/pool"
+	"github.com/sibhellyx/imageProccesor/pkg/image"
 )
 
 type Server struct {
@@ -34,13 +33,9 @@ func (s *Server) Serve() {
 	s.srv = &http.Server{
 		Addr: ":" + s.cfg.Port,
 	}
-
-	pool := pool.NewPool(func(i int, s string) {
-		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
-		fmt.Println("Worker ", i, "procces image ", s)
-	}, 5)
+	pool := pool.NewPool(image.ProccesImage, s.cfg.Workers)
 	repo := repository.NewRepository()
-	service := service.NewService(repo, pool)
+	service := service.NewService(repo, pool, s.cfg.QueueCapacity)
 	handler := handlers.NewHandler(service)
 	routes := api.CreateRoutes(handler)
 
