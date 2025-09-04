@@ -3,11 +3,18 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 
+	"github.com/sibhellyx/imageProccesor/api"
 	"github.com/sibhellyx/imageProccesor/config"
+	"github.com/sibhellyx/imageProccesor/internal/handlers"
+	"github.com/sibhellyx/imageProccesor/internal/repository"
+	"github.com/sibhellyx/imageProccesor/internal/service"
+	"github.com/sibhellyx/imageProccesor/internal/workerpool/pool"
 )
 
 type Server struct {
@@ -26,6 +33,20 @@ func NewServer(ctx context.Context, cfg config.Config) *Server {
 func (s *Server) Serve() {
 	s.srv = &http.Server{
 		Addr: ":" + s.cfg.Port,
+	}
+
+	pool := pool.NewPool(func(i int, s string) {
+		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+		fmt.Println("Worker ", i, "procces image ", s)
+	}, 5)
+	repo := repository.NewRepository()
+	service := service.NewService(repo, pool)
+	handler := handlers.NewHandler(service)
+	routes := api.CreateRoutes(handler)
+
+	s.srv = &http.Server{
+		Addr:    ":" + s.cfg.Port,
+		Handler: routes,
 	}
 
 	log.Printf("Starting server on :%s", s.cfg.Port)
