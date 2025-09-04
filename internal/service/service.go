@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/sibhellyx/imageProccesor/internal/errors"
 	"github.com/sibhellyx/imageProccesor/internal/repository"
@@ -14,19 +13,19 @@ type Service struct {
 	repository *repository.Repository
 	pool       *pool.Pool
 	taskQueue  chan string
-	mu         *sync.Mutex
+	limiter    chan struct{}
 }
 
 func NewService(repo *repository.Repository, pool *pool.Pool, queueCapacity int) *Service {
 	s := &Service{
 		repository: repo,
 		pool:       pool,
-		taskQueue:  make(chan string, queueCapacity),
-		mu:         &sync.Mutex{},
+		taskQueue:  make(chan string),
+		limiter:    make(chan struct{}, queueCapacity),
 	}
 	s.pool.Create()
 
-	go s.procces()
+	go s.proccess()
 
 	return s
 }
@@ -35,6 +34,7 @@ func (s *Service) Create(ctx context.Context, path string) error {
 	select {
 	case s.taskQueue <- path:
 		//запись в репо
+		fmt.Println(path)
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
@@ -43,25 +43,14 @@ func (s *Service) Create(ctx context.Context, path string) error {
 	}
 }
 
-func (s *Service) StartProcces() string {
-	for {
-		select {
-		case imagePath, ok := <-s.taskQueue:
-			if !ok {
-				return ""
-			}
-			return s.pool.Handle(imagePath)
-		default:
-			return ""
-		}
-	}
-}
-
-func (s *Service) procces() {
+func (s *Service) proccess() {
 	for imagePath := range s.taskQueue {
+		s.limiter <- struct{}{}
 		go func(path string) {
-			s := s.pool.Handle(path)
-			fmt.Println("Procces result ", s)
+			defer func() { <-s.limiter }()
+			result := s.pool.Handle(path)
+			fmt.Println("Procces result ", <-result)
 		}(imagePath)
+
 	}
 }

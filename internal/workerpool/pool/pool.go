@@ -33,7 +33,7 @@ func (p *Pool) Create() {
 	}
 }
 
-func (p *Pool) Handle(imagePath string) string {
+func (p *Pool) Handle(imagePath string) <-chan string {
 	resultChan := make(chan string, 1)
 	w := <-p.pool
 	go func() {
@@ -41,7 +41,7 @@ func (p *Pool) Handle(imagePath string) string {
 		w.JobsCompleted++
 		p.pool <- w
 	}()
-	return <-resultChan
+	return resultChan
 }
 
 func (p *Pool) Wait() {
