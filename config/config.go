@@ -29,8 +29,8 @@ func LoadConfig() Config {
 	v.SetDefault("WORKERS", 1)
 
 	v.AutomaticEnv()
-
-	if err := v.ReadInConfig(); err != nil {
+	err := v.ReadInConfig()
+	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Println("Config file not found, using defaults and environment variables")
 		} else {
@@ -42,7 +42,7 @@ func LoadConfig() Config {
 
 	var cfg Config
 
-	err := v.Unmarshal(&cfg)
+	err = v.Unmarshal(&cfg)
 	if err != nil {
 		log.Panic(err)
 	}
