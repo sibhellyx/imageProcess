@@ -8,12 +8,19 @@ import (
 
 	"github.com/sibhellyx/imageProccesor/internal/errors"
 	"github.com/sibhellyx/imageProccesor/internal/repository"
-	"github.com/sibhellyx/imageProccesor/internal/workerpool/pool"
 )
+
+type WorkerPool interface {
+	Create()
+	Handle(imagePath string) <-chan string
+	Wait()
+	Shutdown()
+	Stats()
+}
 
 type Service struct {
 	repository *repository.Repository
-	pool       *pool.Pool
+	pool       WorkerPool
 	taskQueue  chan string
 	limiter    chan struct{}
 
@@ -25,7 +32,7 @@ type Service struct {
 	wg sync.WaitGroup
 }
 
-func NewService(repo *repository.Repository, pool *pool.Pool, queueCapacity int) *Service {
+func NewService(repo *repository.Repository, pool WorkerPool, queueCapacity int) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
 		repository: repo,

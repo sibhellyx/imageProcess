@@ -88,15 +88,11 @@ func (p *Pool) Shutdown() {
 	p.mu.Lock()
 	p.shutdown = true
 	p.mu.Unlock()
-
 	p.cancel()
-
 	p.wg.Wait()
-
 	p.Wait()
-
 	close(p.pool)
-	fmt.Println("Worker pool was graceful shutdown")
+	// fmt.Println("Worker pool was graceful shutdown")
 }
 
 func (p *Pool) Stats() {
