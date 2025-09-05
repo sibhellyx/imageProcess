@@ -20,7 +20,7 @@ func NewService(repo *repository.Repository, pool *pool.Pool, queueCapacity int)
 	s := &Service{
 		repository: repo,
 		pool:       pool,
-		taskQueue:  make(chan string),
+		taskQueue:  make(chan string, queueCapacity),
 		limiter:    make(chan struct{}, queueCapacity),
 	}
 	s.pool.Create()
@@ -34,7 +34,6 @@ func (s *Service) Create(ctx context.Context, path string) error {
 	select {
 	case s.taskQueue <- path:
 		//запись в репо
-		fmt.Println(path)
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()

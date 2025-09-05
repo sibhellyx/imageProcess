@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -29,7 +28,7 @@ func (h *Handler) Image(c *gin.Context) {
 		return
 	}
 
-	err = h.service.Create(context.Background(), request.Path)
+	err = h.service.Create(c.Request.Context(), request.Path)
 	if err != nil {
 		WrapError(c, err)
 		return
