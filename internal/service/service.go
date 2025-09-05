@@ -53,3 +53,7 @@ func (s *Service) proccess() {
 
 	}
 }
+
+func (s *Service) Shutdown() {
+	s.pool.Wait()
+}
