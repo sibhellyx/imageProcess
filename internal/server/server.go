@@ -58,9 +58,12 @@ func (s *Server) Shutdown() {
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	s.pool.Shutdown()
+	err := s.service.Shutdown(ctxShutdown)
+	if err != nil {
+		log.Fatalf("Service shutdown error: %v", err)
+	}
 
-	err := s.srv.Shutdown(ctxShutdown)
+	err = s.srv.Shutdown(ctxShutdown)
 	if err != nil {
 		log.Fatalf("Server shutdown error: %v", err)
 	}

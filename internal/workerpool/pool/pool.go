@@ -9,14 +9,16 @@ import (
 )
 
 type Pool struct {
-	pool     chan *worker.Worker
-	handler  func(int, string) string
-	workers  []*worker.Worker
+	pool    chan *worker.Worker
+	handler func(int, string) string
+	workers []*worker.Worker
+
 	ctx      context.Context
 	cancel   context.CancelFunc
-	mu       *sync.Mutex
 	shutdown bool
-	wg       sync.WaitGroup
+
+	mu sync.Mutex
+	wg sync.WaitGroup
 }
 
 func NewPool(handler func(int, string) string, countWorkers int) *Pool {
@@ -28,7 +30,6 @@ func NewPool(handler func(int, string) string, countWorkers int) *Pool {
 		workers:  make([]*worker.Worker, 0, countWorkers),
 		ctx:      ctx,
 		cancel:   cancel,
-		mu:       &sync.Mutex{},
 		shutdown: false,
 	}
 
