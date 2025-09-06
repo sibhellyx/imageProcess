@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,7 +23,6 @@ func main() {
 	server := server.NewServer(ctx, cfg)
 	go func() {
 		<-sigChan
-		fmt.Println("\nПолучен сигнал завершения, начинаю graceful shutdown...")
 		server.Shutdown()
 		cancel()
 	}()
