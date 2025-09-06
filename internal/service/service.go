@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/sibhellyx/imageProccesor/internal/errors"
 	"github.com/sibhellyx/imageProccesor/internal/repository"
@@ -60,7 +59,6 @@ func (s *Service) Create(ctx context.Context, path string) error {
 		return errors.ErrServerShuttingDown
 	}
 	s.mu.Unlock()
-
 	select {
 	case s.taskQueue <- path:
 		//запись в репо
@@ -86,7 +84,6 @@ func (s *Service) proccess() {
 			select {
 			case s.limiter <- struct{}{}:
 				s.wg.Add(1)
-				time.Sleep(1 * time.Second)
 				go func(path string) {
 					defer func() {
 						<-s.limiter
@@ -119,7 +116,6 @@ func (s *Service) Shutdown(ctx context.Context) error {
 	}()
 
 	close(s.taskQueue)
-	s.wg.Wait()
 
 	s.pool.Shutdown()
 	select {
