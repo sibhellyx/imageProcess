@@ -4,14 +4,16 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/sibhellyx/imageProccesor/internal/errors"
+	"github.com/sibhellyx/imageProccesor/internal/models"
 	"github.com/sibhellyx/imageProccesor/internal/repository"
 )
 
 type WorkerPool interface {
 	Create()
-	Handle(imagePath string) <-chan string
+	Handle(imagePath *models.ImageTask) <-chan error
 	Wait()
 	Shutdown()
 	Stats()
@@ -20,7 +22,7 @@ type WorkerPool interface {
 type Service struct {
 	repository *repository.Repository
 	pool       WorkerPool
-	taskQueue  chan string
+	taskQueue  chan *models.ImageTask
 	limiter    chan struct{}
 
 	ctx      context.Context
@@ -36,7 +38,7 @@ func NewService(repo *repository.Repository, pool WorkerPool, queueCapacity int)
 	s := &Service{
 		repository: repo,
 		pool:       pool,
-		taskQueue:  make(chan string, queueCapacity),
+		taskQueue:  make(chan *models.ImageTask, queueCapacity),
 		limiter:    make(chan struct{}, queueCapacity),
 
 		ctx:      ctx,
@@ -51,8 +53,33 @@ func NewService(repo *repository.Repository, pool WorkerPool, queueCapacity int)
 	return s
 }
 
-func (s *Service) Create(ctx context.Context, path string) error {
+func (s *Service) AddImageTask(req models.ImageRequest) (*models.ImageTask, error) {
+	isDownload, err := req.Validate()
+	if err != nil {
+		return nil, err
+	}
 
+	if isDownload {
+		imageTask := &models.ImageTask{
+			Name:         req.Name,
+			DownloadPath: req.Url,
+			Path:         "",
+			Status:       models.StatusPending,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+			Actions:      req.Actions,
+		}
+
+		fmt.Println(imageTask)
+		return imageTask, nil
+	}
+
+	//get from repo
+
+	return nil, nil
+}
+
+func (s *Service) Proccess(ctx context.Context, imageTask *models.ImageTask) error {
 	s.mu.Lock()
 	if s.shutdown {
 		s.mu.Unlock()
@@ -60,7 +87,7 @@ func (s *Service) Create(ctx context.Context, path string) error {
 	}
 	s.mu.Unlock()
 	select {
-	case s.taskQueue <- path:
+	case s.taskQueue <- imageTask:
 		//запись в репо
 		return nil
 	case <-ctx.Done(): //контекст отслеживающий отмену запроса
@@ -76,7 +103,7 @@ func (s *Service) proccess() {
 	defer s.wg.Done()
 	for {
 		select {
-		case imagePath, ok := <-s.taskQueue:
+		case imageTask, ok := <-s.taskQueue:
 			if !ok {
 				fmt.Println("task queue channel was closed")
 				return
@@ -84,16 +111,16 @@ func (s *Service) proccess() {
 			select {
 			case s.limiter <- struct{}{}:
 				s.wg.Add(1)
-				go func(path string) {
+				go func(imageTask *models.ImageTask) {
 					defer func() {
 						<-s.limiter
 						s.wg.Done()
 					}()
-					result := s.pool.Handle(path)
+					result := s.pool.Handle(imageTask)
 					fmt.Println("Procces result ", <-result)
-				}(imagePath)
+				}(imageTask)
 			case <-s.ctx.Done():
-				fmt.Println("Skipping task due to shutdown:", imagePath)
+				fmt.Println("Skipping task due to shutdown:", imageTask.Path)
 			}
 		case <-s.ctx.Done():
 			return
@@ -126,13 +153,3 @@ func (s *Service) Shutdown(ctx context.Context) error {
 		return ctx.Err()
 	}
 }
-
-// for imagePath := range s.taskQueue {
-// 	s.limiter <- struct{}{}
-// 	go func(path string) {
-// 		defer func() { <-s.limiter }()
-// 		result := s.pool.Handle(path)
-// 		fmt.Println("Procces result ", <-result)
-// 	}(imagePath)
-
-// }

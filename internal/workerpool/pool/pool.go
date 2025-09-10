@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/sibhellyx/imageProccesor/internal/models"
 	"github.com/sibhellyx/imageProccesor/internal/workerpool/worker"
 )
 
 type Pool struct {
 	pool    chan *worker.Worker
-	handler func(int, string) string
+	handler func(int, *models.ImageTask) error
 	workers []*worker.Worker
 
 	ctx      context.Context
@@ -21,7 +22,7 @@ type Pool struct {
 	wg sync.WaitGroup
 }
 
-func NewPool(handler func(int, string) string, countWorkers int) *Pool {
+func NewPool(handler func(int, *models.ImageTask) error, countWorkers int) *Pool {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	p := &Pool{
@@ -47,17 +48,17 @@ func (p *Pool) Create() {
 	}
 }
 
-func (p *Pool) Handle(imagePath string) <-chan string {
+func (p *Pool) Handle(imagePath *models.ImageTask) <-chan error {
 	p.mu.Lock()
 	if p.shutdown {
 		p.mu.Unlock()
-		ch := make(chan string)
+		ch := make(chan error)
 		close(ch)
 		return ch
 	}
 	p.mu.Unlock()
 
-	resultChan := make(chan string, 1)
+	resultChan := make(chan error, 1)
 
 	select {
 	case w := <-p.pool:
@@ -66,9 +67,9 @@ func (p *Pool) Handle(imagePath string) <-chan string {
 			defer p.wg.Done()
 			defer func() { p.pool <- w }()
 
-			result := p.handler(w.Id, imagePath)
+			err := p.handler(w.Id, imagePath)
 			w.JobsCompleted++
-			resultChan <- result
+			resultChan <- err
 
 		}()
 	case <-p.ctx.Done():

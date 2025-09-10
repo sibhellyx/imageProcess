@@ -28,7 +28,14 @@ func (h *Handler) Image(c *gin.Context) {
 		return
 	}
 
-	err = h.service.Create(c.Request.Context(), request.Path)
+	task, err := h.service.AddImageTask(request)
+	if err != nil {
+		WrapError(c, err)
+		return
+	}
+
+	err = h.service.Proccess(c.Request.Context(), task)
+
 	if err != nil {
 		WrapError(c, err)
 		return
