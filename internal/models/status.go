@@ -8,6 +8,7 @@ const (
 	StatusCompleted  StatusImage = "Completed"
 	StatusFailed     StatusImage = "Failed"
 	StatusUnknow     StatusImage = "Unknown"
+	StatusCanceled   StatusImage = "Canceled"
 )
 
 func (s StatusImage) IsValid() bool {
@@ -15,6 +16,7 @@ func (s StatusImage) IsValid() bool {
 	case StatusPending,
 		StatusProcessing,
 		StatusCompleted,
+		StatusCanceled,
 		StatusFailed:
 		return true
 	default:
@@ -32,6 +34,8 @@ func ParseStatus(status string) StatusImage {
 		return StatusCompleted
 	case "Failed":
 		return StatusFailed
+	case "Canceled":
+		return StatusCanceled
 	default:
 		return StatusUnknow
 	}

@@ -1,30 +1,30 @@
 package image
 
 import (
+	"fmt"
+
 	"github.com/sibhellyx/imageProccesor/internal/models"
+	"github.com/sibhellyx/imageProccesor/pkg/actions"
 )
 
 func ProccesImage(id int, task *models.ImageTask) error {
+	img, err := actions.OpenImage(task.Path)
+	if err != nil {
+		return fmt.Errorf("error of open image: %w", err)
+	}
 	for _, action := range task.Actions {
 		switch action.Type {
-		// case models.ActionTypeDownload:
-		// 	output, err := actions.DownloadImageWithResty(task.DownloadPath, task.Name)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	fmt.Println(output)
-		// 	task.Path = output
-
 		case models.ActionTypeResize:
-			// params := action.GetResizeParams()
-			// err := actions.Resize(task.Path, params)
-			// if err != nil {
-			// 	return err
-			// }
-
+			params := action.GetResizeParams()
+			img, err = actions.Resize(img, params)
+			if err != nil {
+				return fmt.Errorf("error of resize image: %w", err)
+			}
 		}
 	}
-
+	err = actions.SaveImage(img, task.Path)
+	if err != nil {
+		return fmt.Errorf("error of save image: %w", err)
+	}
 	return nil
-	// return "new" + path
 }

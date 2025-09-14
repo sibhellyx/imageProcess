@@ -119,18 +119,23 @@ func (s *Service) proccess() {
 			select {
 			case s.limiter <- struct{}{}:
 				s.wg.Add(1)
-				//написать Proccesing
+				imageTask.Status = models.StatusProcessing
 				go func(imageTask *models.ImageTask) {
 					defer func() {
 						<-s.limiter
 						s.wg.Done()
 					}()
 					result := s.pool.Handle(imageTask)
-					fmt.Println("Procces result ", <-result)
+					if <-result != nil {
+						imageTask.Status = models.StatusFailed
+					} else {
+						imageTask.Status = models.StatusCompleted
+					}
 				}(imageTask)
 			case <-s.ctx.Done():
-				//записать failed
+
 				fmt.Println("Skipping task due to shutdown:", imageTask.Path)
+				imageTask.Status = models.StatusCanceled
 			}
 		case <-s.ctx.Done():
 			return

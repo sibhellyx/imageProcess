@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"fmt"
 	"image"
 
 	"github.com/disintegration/imaging"
@@ -9,12 +10,21 @@ import (
 const baseDir = "./downloads"
 
 // func for open img.
-func openImage(path string) (image.Image, error) {
-	img, err := imaging.Open(baseDir + "/" + path)
+func OpenImage(path string) (image.Image, error) {
+	img, err := imaging.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	return img, nil
+}
+
+// func for save img
+func SaveImage(img image.Image, path string) error {
+	err := imaging.Save(img, path)
+	if err != nil {
+		return fmt.Errorf("failed to save image: %w", err)
+	}
+	return nil
 }
 
 // get type interpolation.
