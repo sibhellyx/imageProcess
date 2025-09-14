@@ -9,8 +9,6 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-const baseDir = "./downloads/"
-
 func DownloadImageWithResty(url, filename string) (string, error) {
 	client := resty.New()
 

@@ -9,6 +9,7 @@ import (
 	"github.com/sibhellyx/imageProccesor/internal/errors"
 	"github.com/sibhellyx/imageProccesor/internal/models"
 	"github.com/sibhellyx/imageProccesor/internal/repository"
+	"github.com/sibhellyx/imageProccesor/pkg/actions"
 )
 
 type WorkerPool interface {
@@ -53,30 +54,37 @@ func NewService(repo *repository.Repository, pool WorkerPool, queueCapacity int)
 	return s
 }
 
-func (s *Service) AddImageTask(req models.ImageRequest) (*models.ImageTask, error) {
-	isDownload, err := req.Validate()
+func (s *Service) AddImageTask(req models.ImageRequestAction) (*models.ImageTask, error) {
+	err := req.Validate()
 	if err != nil {
 		return nil, err
 	}
 
-	if isDownload {
-		imageTask := &models.ImageTask{
-			Name:         req.Name,
-			DownloadPath: req.Url,
-			Path:         "",
-			Status:       models.StatusPending,
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-			Actions:      req.Actions,
-		}
-
-		fmt.Println(imageTask)
-		return imageTask, nil
+	imageTask := &models.ImageTask{
+		Name:         "",
+		DownloadPath: "",
+		Path:         req.Path,
+		Status:       models.StatusPending,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+		Actions:      req.Actions,
 	}
 
-	//get from repo
+	return imageTask, nil
+}
 
-	return nil, nil
+func (s *Service) Download(req models.ImageRequestDownload) (string, error) {
+	err := req.Validate()
+	if err != nil {
+		return "", err
+	}
+
+	path, err := actions.DownloadImageWithResty(req.Url, req.Name)
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
 }
 
 func (s *Service) Proccess(ctx context.Context, imageTask *models.ImageTask) error {
@@ -111,6 +119,7 @@ func (s *Service) proccess() {
 			select {
 			case s.limiter <- struct{}{}:
 				s.wg.Add(1)
+				//написать Proccesing
 				go func(imageTask *models.ImageTask) {
 					defer func() {
 						<-s.limiter
@@ -120,6 +129,7 @@ func (s *Service) proccess() {
 					fmt.Println("Procces result ", <-result)
 				}(imageTask)
 			case <-s.ctx.Done():
+				//записать failed
 				fmt.Println("Skipping task due to shutdown:", imageTask.Path)
 			}
 		case <-s.ctx.Done():

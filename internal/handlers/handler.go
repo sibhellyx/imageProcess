@@ -21,7 +21,7 @@ func NewHandler(service *service.Service) *Handler {
 }
 
 func (h *Handler) Image(c *gin.Context) {
-	var request models.ImageRequest
+	var request models.ImageRequestAction
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
 		WrapError(c, err)
@@ -44,6 +44,28 @@ func (h *Handler) Image(c *gin.Context) {
 	c.JSON(
 		http.StatusOK, gin.H{
 			"result": "created",
+		},
+	)
+}
+
+func (h *Handler) Download(c *gin.Context) {
+	var request models.ImageRequestDownload
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
+	if err != nil {
+		WrapError(c, err)
+		return
+	}
+
+	path, err := h.service.Download(request)
+	if err != nil {
+		WrapError(c, err)
+		return
+	}
+
+	c.JSON(
+		http.StatusOK, gin.H{
+			"result":         "downloaded",
+			"path for image": path,
 		},
 	)
 }

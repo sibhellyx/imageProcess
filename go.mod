@@ -7,6 +7,11 @@ require github.com/spf13/viper v1.20.1 // direct
 require github.com/gin-gonic/gin v1.10.1
 
 require (
+	github.com/disintegration/imaging v1.6.2 // indirect
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
+)
+
+require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.1 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
