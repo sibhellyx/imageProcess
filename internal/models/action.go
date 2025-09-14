@@ -39,6 +39,8 @@ func (a Action) ValidateParams() error {
 	switch a.Type {
 	case ActionTypeResize:
 		return a.ValiateResizeParams()
+	case ActionTypeConvert:
+		return a.ValidateConvertParams()
 	default:
 		return nil
 	}

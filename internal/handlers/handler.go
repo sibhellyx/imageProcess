@@ -43,7 +43,7 @@ func (h *Handler) Image(c *gin.Context) {
 
 	c.JSON(
 		http.StatusOK, gin.H{
-			"result": "created",
+			"result": "task created",
 		},
 	)
 }

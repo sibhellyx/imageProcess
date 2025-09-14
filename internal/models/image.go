@@ -10,6 +10,7 @@ type ImageRequestDownload struct {
 	Name string `json:"name,omitempty"`
 }
 
+// добавить проверку существования ссылки
 func (r *ImageRequestDownload) Validate() error {
 	if r.Name == "" || r.Url == "" {
 		return fmt.Errorf("url and name are required")
@@ -22,6 +23,7 @@ type ImageRequestAction struct {
 	Actions []Action `json:"actions"`
 }
 
+// добавить валидацию пути файла с проверкой его существования
 func (r *ImageRequestAction) Validate() error {
 	if r.Path == "" {
 		return fmt.Errorf("path is required for proccesing")

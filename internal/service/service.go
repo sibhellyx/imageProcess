@@ -133,7 +133,6 @@ func (s *Service) proccess() {
 					}
 				}(imageTask)
 			case <-s.ctx.Done():
-
 				fmt.Println("Skipping task due to shutdown:", imageTask.Path)
 				imageTask.Status = models.StatusCanceled
 			}
